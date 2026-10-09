@@ -60,6 +60,34 @@ router.get('/auth/me', requireAuth, (req, res) => {
   res.json({ email: req.user.email, name: req.user.name })
 })
 
+// Public read-only endpoints (used by granulesindia.com frontend)
+router.get('/public/documents', ready, wrap(async (req, res) => {
+  const result = listContent({ ...req.query, status: 'published' })
+  res.json(result)
+}))
+
+router.get('/public/index', ready, wrap(async (req, res) => {
+  const result = listContent({ pageSize: 1000, status: 'published' })
+  res.json({
+    version: 1,
+    records: result.items,
+    total: result.total,
+    navigation: getNavigation(),
+  })
+}))
+
+router.get('/public/navigation', ready, wrap(async (req, res) => {
+  res.json({ tree: getNavigation() })
+}))
+
+router.get('/public/pages/:slug', ready, wrap(async (req, res) => {
+  const page = getPage(req.params.slug)
+  if (page.status !== 'published') {
+    return res.status(404).json({ error: 'Page not found or not published' })
+  }
+  res.json(page)
+}))
+
 router.use(requireAuth, ready)
 
 router.get('/dashboard', wrap(async (req, res) => {
